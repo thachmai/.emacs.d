@@ -11,21 +11,31 @@
     (package-refresh-contents)
     (package-install 'use-package))
 (require 'use-package)
-(require 'evil)
+
 
 ; evil-leader
+; must appear before (require 'evil)
 (use-package evil-leader
   :commands (evil-leader-mode)
   :ensure evil-leader
   :demand evil-leader
-  :init
-  (global-evil-leader-mode)
+  :init (global-evil-leader-mode)
   :config
   (progn
-    (evil-leader/set-leader " ")
+    (evil-leader/set-leader "<SPC>")
     (evil-leader/set-key "q" 'kill-buffer-and-window)
+    (evil-leader/set-key "|" 'split-window-horizontally)
+    (evil-leader/set-key "-" 'split-window-vertically)
+    (evil-leader/set-key "b" 'ibuffer)
+    (evil-leader/set-key "x" 'helm-M-x)
     )
   )
+
+(require 'evil)
+
+; magit
+; heml
+; TODO, since they seem to work only with emacs 24.4 and the default emacs from apt is 24.3
 
 ; elisp-slime-nav
 (require 'elisp-slime-nav)
@@ -44,8 +54,54 @@
 (define-key evil-normal-state-map (kbd "C-l") 'evil-window-right)
 
 ; esc "rebind"
-(define-key evil-insert-state-map (kbd "jk") 'evil-normal-state)
+; doesn't work, it messes up the j key in insert mode
+;(define-key evil-insert-state-map (kbd "jk") 'evil-normal-state)
 
+; simulating vinegar
+(require 'dired-x)
+(define-key evil-normal-state-map (kbd "-") 'dired-jump)
+; dired bindings
+(defun my-dired-up-directory ()
+  "Take dired up one directory, but behave like dired-find-alternate-file"
+  (interactive)
+  (let ((old (current-buffer)))
+    (dired-up-directory)
+    (kill-buffer old)
+    ))
+(evil-define-key 'normal dired-mode-map "h" 'dired-up-directory)
+(evil-define-key 'normal dired-mode-map "l" 'dired-find-alternate-file)
+(evil-define-key 'normal dired-mode-map "o" 'dired-sort-toggle-or-edit)
+(evil-define-key 'normal dired-mode-map "v" 'dired-toggle-marks)
+(evil-define-key 'normal dired-mode-map "m" 'dired-mark)
+(evil-define-key 'normal dired-mode-map "u" 'dired-unmark)
+(evil-define-key 'normal dired-mode-map "U" 'dired-unmark-all-marks)
+(evil-define-key 'normal dired-mode-map "c" 'dired-create-directory)
+(evil-define-key 'normal dired-mode-map "n" 'evil-search-next)
+(evil-define-key 'normal dired-mode-map "N" 'evil-search-previous)
+(evil-define-key 'normal dired-mode-map "q" 'kill-this-buffer)
+(evil-define-key 'normal dired-mode-map "h" 'my-dired-up-directory)
+
+; fixing ibuffer bindings
+(eval-after-load 'ibuffer
+  '(progn
+     (evil-set-initial-state 'ibuffer-mode 'normal)
+     (evil-define-key 'normal ibuffer-mode-map
+       (kbd "m") 'ibuffer-mark-forward
+       (kbd "t") 'ibuffer-toggle-marks
+       (kbd "u") 'ibuffer-unmark-forward
+       (kbd "=") 'ibuffer-diff-with-file
+       (kbd "j") 'ibuffer-jump-to-buffer
+       (kbd "M-g") 'ibuffer-jump-to-buffer
+       (kbd "M-s a C-s") 'ibuffer-do-isearch
+       (kbd "M-s a M-C-s") 'ibuffer-do-isearch-regexp
+       ;; ...
+       )
+     )
+  )
+
+
+(visual-line-mode 1)
 ; this stays at the bottom per https://nathantypanski.com/blog/2014-08-03-a-vim-like-emacs-config.html
 (evil-mode 1)
 
+(put 'dired-find-alternate-file 'disabled nil)
